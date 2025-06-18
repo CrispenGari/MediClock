@@ -1,45 +1,99 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
+import { api } from "@/convex/_generated/api";
+import { COLORS, FONTS } from "@/src/constants";
+import { useMeStore } from "@/src/store/meStore";
+import { useUser } from "@clerk/clerk-expo";
+import { Ionicons } from "@expo/vector-icons";
+import { useMutation } from "convex/react";
+import { Tabs } from "expo-router";
+import React from "react";
+import { Dimensions, Platform } from "react-native";
 
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+const { width } = Dimensions.get("window");
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+const Layout = () => {
+  const { me, save } = useMeStore();
+  const { user } = useUser();
+  const mutateSaveUser = useMutation(api.api.users.findUserOrCreateOne);
+  React.useEffect(() => {
+    if (!!!me && !!user) {
+      mutateSaveUser({
+        id: user.id,
+        firstName: user.firstName!,
+        lastName: user.lastName!,
+        image: user.imageUrl || "",
+        email: user.emailAddresses[0].emailAddress,
+      })
+        .then((res) => {
+          if (res?.me) {
+            save(res.me);
+          }
+        })
+        .catch((error) => {
+          console.error("Error saving user:", error);
+        });
+    }
+  }, [me, user]);
 
   return (
     <Tabs
+      initialRouteName="home"
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
+        tabBarStyle: {
+          height:
+            width >= 600 ? 70 : Platform.select({ ios: 100, android: 80 }),
+          backgroundColor: COLORS.transparent,
+          position: "absolute",
+          elevation: 0,
+        },
+        tabBarHideOnKeyboard: true,
+        tabBarInactiveTintColor: COLORS.gray,
+        tabBarActiveTintColor: COLORS.secondary,
+        headerShown: true,
+        tabBarLabelStyle: {
+          fontFamily: FONTS.bold,
+          fontSize: 12,
+          marginTop: width >= 600 ? 10 : 0,
+        },
+        // tabBarBackground: () => (
+        //   <BlurView
+        //     tint="light"
+        //     intensity={100}
+        //     style={StyleSheet.absoluteFill}
+        //   />
+        // ),
+      }}
+    >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "Home",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cart-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="history"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "History",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="heart-outline" color={color} size={size} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-circle-outline" color={color} size={size} />
+          ),
+          headerShown: false,
         }}
       />
     </Tabs>
   );
-}
+};
+
+export default Layout;
