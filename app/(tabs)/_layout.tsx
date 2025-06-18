@@ -1,14 +1,15 @@
 import { api } from "@/convex/_generated/api";
-import { COLORS, FONTS } from "@/src/constants";
+import { TUser } from "@/convex/tables/users";
+import HomeHeader from "@/src/components/Headers/HomeHeader";
+import { COLORS } from "@/src/constants";
 import { useMeStore } from "@/src/store/meStore";
 import { useUser } from "@clerk/clerk-expo";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useMutation } from "convex/react";
+import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import React from "react";
-import { Dimensions, Platform } from "react-native";
-
-const { width } = Dimensions.get("window");
+import { Image, StyleSheet } from "react-native";
 
 const Layout = () => {
   const { me, save } = useMeStore();
@@ -23,9 +24,16 @@ const Layout = () => {
         image: user.imageUrl || "",
         email: user.emailAddresses[0].emailAddress,
       })
-        .then((res) => {
+        .then((res: { me: TUser | null }) => {
           if (res?.me) {
-            save(res.me);
+            save({
+              _id: res.me._id,
+              firstName: res.me.firstName,
+              lastName: res.me.lastName,
+              id: res.me.id,
+              image: res.me.image,
+              email: res.me.email,
+            });
           }
         })
         .catch((error) => {
@@ -34,33 +42,40 @@ const Layout = () => {
     }
   }, [me, user]);
 
+  console.log({ me });
   return (
     <Tabs
       initialRouteName="home"
       screenOptions={{
         tabBarStyle: {
-          height:
-            width >= 600 ? 70 : Platform.select({ ios: 100, android: 80 }),
-          backgroundColor: COLORS.transparent,
-          position: "absolute",
+          backgroundColor: COLORS.tertiary,
           elevation: 0,
+          width: "100%",
+          maxWidth: 300,
+          bottom: 30,
+          alignSelf: "center",
+          borderRadius: 999,
+          justifyContent: "center",
+          height: 50,
+          paddingTop: 5,
         },
         tabBarHideOnKeyboard: true,
-        tabBarInactiveTintColor: COLORS.gray,
+        tabBarInactiveTintColor: COLORS.tertiary,
         tabBarActiveTintColor: COLORS.secondary,
         headerShown: true,
         tabBarLabelStyle: {
-          fontFamily: FONTS.bold,
-          fontSize: 12,
-          marginTop: width >= 600 ? 10 : 0,
+          display: "none",
         },
-        // tabBarBackground: () => (
-        //   <BlurView
-        //     tint="light"
-        //     intensity={100}
-        //     style={StyleSheet.absoluteFill}
-        //   />
-        // ),
+        tabBarBackground: () => (
+          <BlurView
+            tint="extraLight"
+            intensity={100}
+            style={[
+              StyleSheet.absoluteFill,
+              { borderRadius: 999, overflow: "hidden" },
+            ]}
+          />
+        ),
       }}
     >
       <Tabs.Screen
@@ -68,8 +83,11 @@ const Layout = () => {
         options={{
           title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cart-outline" color={color} size={size} />
+            <FontAwesome5 name="pills" size={size} color={color} />
           ),
+          header(props) {
+            return <HomeHeader {...props} />;
+          },
         }}
       />
       <Tabs.Screen
@@ -77,7 +95,7 @@ const Layout = () => {
         options={{
           title: "History",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="heart-outline" color={color} size={size} />
+            <MaterialIcons name="history" size={size} color={color} />
           ),
         }}
       />
@@ -86,9 +104,30 @@ const Layout = () => {
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-circle-outline" color={color} size={size} />
-          ),
+          tabBarIcon: ({ color, size, focused }) => {
+            if (!!!me?.image) {
+              return (
+                <Ionicons
+                  name="person-circle-outline"
+                  color={color}
+                  size={size}
+                />
+              );
+            }
+            return (
+              <Image
+                source={{ uri: me.image }}
+                style={{
+                  width: 35,
+                  height: 35,
+                  borderRadius: 999,
+                  borderWidth: 2,
+                  borderColor: focused ? COLORS.secondary : COLORS.transparent,
+                }}
+              />
+            );
+          },
+
           headerShown: false,
         }}
       />

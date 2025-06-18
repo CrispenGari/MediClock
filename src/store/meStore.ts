@@ -7,7 +7,7 @@ interface TMe {
   firstName: string | null;
   lastName: string | null;
   id: string;
-  imageUrl: string;
+  image: string;
   email: string;
   _id: Id<"users">;
 }

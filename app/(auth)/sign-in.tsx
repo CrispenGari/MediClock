@@ -7,9 +7,9 @@ import { onImpact } from "@/src/utils";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useWarmUpBrowser } from "@/src/hooks";
-import { useSSO, useUser } from "@clerk/clerk-expo";
+import { useSignIn, useSSO } from "@clerk/clerk-expo";
 import * as Linking from "expo-linking";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React from "react";
 import {
@@ -27,8 +27,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 WebBrowser.maybeCompleteAuthSession();
 const Page = () => {
   useWarmUpBrowser();
+  const { signIn, setActive, isLoaded } = useSignIn();
   const { startSSOFlow } = useSSO();
-  const { isLoaded } = useUser();
+  const router = useRouter();
   const { settings } = useSettingsStore();
   const [state, setState] = React.useState({
     error: "",
@@ -41,6 +42,53 @@ const Page = () => {
   const onSignIn = async () => {
     if (settings.haptics) {
       await onImpact();
+    }
+
+    if (!isLoaded) return;
+
+    setState((state) => ({
+      ...state,
+      error: "",
+      loading: true,
+    }));
+    try {
+      const signInAttempt = await signIn.create({
+        identifier: state.email,
+        password: state.password,
+      });
+      if (signInAttempt.status === "complete") {
+        await setActive({ session: signInAttempt.createdSessionId });
+        router.replace("/");
+      } else {
+        setState((state) => ({
+          ...state,
+          loading: false,
+          error:
+            signInAttempt.status === "needs_first_factor"
+              ? "Please complete the first factor of authentication."
+              : "Sign-in failed. Please try again.",
+        }));
+      }
+    } catch (err: any) {
+      if (err.errors) {
+        const [error] = err.errors;
+        setState((s) => ({
+          ...s,
+          error: error.longMessage,
+          loading: false,
+        }));
+      } else {
+        setState((s) => ({
+          ...s,
+          error: "Failed to sign in. Please try again.",
+          loading: false,
+        }));
+      }
+    } finally {
+      setState((s) => ({
+        ...s,
+        loading: false,
+      }));
     }
   };
 
@@ -79,7 +127,7 @@ const Page = () => {
         const [error] = err.errors;
         setState((s) => ({
           ...s,
-          error_msg: error.message,
+          error_msg: error.longMessage,
           loading: false,
         }));
       } else {
@@ -133,6 +181,7 @@ const Page = () => {
               leftIcon={
                 <Ionicons name="mail" color={COLORS.gray200} size={20} />
               }
+              keyboardType="email-address"
             />
           </View>
           <View style={styles.row}>
@@ -185,6 +234,42 @@ const Page = () => {
             >
               {state.error}
             </Text>
+          </View>
+          <View
+            style={[
+              styles.row,
+              {
+                justifyContent: "flex-end",
+                alignItems: "flex-start",
+              },
+            ]}
+          >
+            <Link
+              href={{
+                pathname: "/(auth)/forgot-password",
+                params: {
+                  email: state.email,
+                },
+              }}
+              asChild
+            >
+              <Text
+                style={{
+                  fontFamily: FONTS.bold,
+                  fontSize: 16,
+                  color: COLORS.gray200,
+                }}
+              >
+                Don't remember my password?{" "}
+                <Text
+                  style={{
+                    color: COLORS.primary,
+                  }}
+                >
+                  Reset Password.
+                </Text>
+              </Text>
+            </Link>
           </View>
 
           <View style={styles.row}>

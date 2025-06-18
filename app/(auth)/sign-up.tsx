@@ -86,7 +86,7 @@ const Page = () => {
         const [error] = err.errors;
         setState((s) => ({
           ...s,
-          error: error.long_message,
+          error: error.longMessage,
           loading: false,
         }));
       } else {
@@ -147,7 +147,7 @@ const Page = () => {
         const [error] = err.errors;
         setState((s) => ({
           ...s,
-          error: error.long_message,
+          error: error.longMessage,
           loading: false,
           code: "",
         }));
@@ -206,7 +206,7 @@ const Page = () => {
         const [error] = err.errors;
         setState((s) => ({
           ...s,
-          error: error.long_message,
+          error: error.longMessage,
           loading: false,
         }));
       } else {
@@ -227,11 +227,11 @@ const Page = () => {
     >
       <Modal
         isVisible={state.pendingVerification}
-        onBackdropPress={Keyboard.dismiss}
+        onBackdropPress={() =>
+          setState((s) => ({ ...s, pendingVerification: false, code: "" }))
+        }
       >
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View
             style={{
               backgroundColor: COLORS.main,
@@ -297,7 +297,7 @@ const Page = () => {
               />
             </View>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -355,6 +355,7 @@ const Page = () => {
           <View style={styles.row}>
             <TextInput
               label="Email Address"
+              keyboardType="email-address"
               placeholder="e.g. johndoe@gmail.com"
               onChangeText={(text) => setState((s) => ({ ...s, email: text }))}
               text={state.email}

@@ -1,11 +1,14 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { ScrollView } from "react-native";
 
 const Page = () => {
   return (
-    <View>
-      <Text>Page</Text>
-    </View>
+    <ScrollView
+      style={{ flex: 1, padding: 20 }}
+      contentContainerStyle={{ paddingBottom: 100 }}
+      showsVerticalScrollIndicator={false}
+      showsHorizontalScrollIndicator={false}
+    ></ScrollView>
   );
 };
 
